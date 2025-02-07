@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Viewer</title>
     <style>
-        /* Lighter dark theme for easier viewing */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #2c2f38; /* Lighter dark background */
+            background-color: #2c2f38;
             color: #e0e0e0;
             padding: 20px;
         }
         .media-container {
             margin-bottom: 20px;
         }
-        .media-container img, .media-container video {
+        .media-container img {
             max-width: 100%;
             max-height: 70vh;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             border-radius: 10px;
-            transition: opacity 0.3s ease-in-out;
+        }
+        .media-container a {
+            display: block;
+            font-size: 14px;
+            color: #00aaff;
+            margin-bottom: 15px;
         }
         button {
             padding: 10px 20px;
@@ -32,76 +36,25 @@
             background-color: #4CAF50;
             color: white;
             border-radius: 5px;
-            transition: background-color 0.2s ease;
         }
         button:hover {
             background-color: #45a049;
-        }
-        button.disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
-        #link-preview {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #ccc;
-            word-wrap: break-word;
-        }
-        a {
-            color: #00aaff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Ensure buttons are mobile-friendly */
-        button {
-            width: 150px;
-        }
-
-        /* Styling for the auto-next counter */
-        #autoNextCounter {
-            font-size: 18px;
-            color: #f39c12;
-            margin-top: 10px;
-            display: none;
         }
     </style>
 </head>
 <body>
     <h1>Media Viewer</h1>
-    
-    <!-- Buttons moved to the top -->
-    <div>
-        <button id="backBtn" class="disabled" onclick="showMedia('prev')" aria-label="Go to previous media">Back</button>
-        <button id="nextBtn" onclick="showMedia('next')" aria-label="Go to next media">Next</button>
-        <button id="randomBtn" onclick="toggleAutoRandom()" aria-label="Start auto random media">Random</button>
-    </div>
+    <button id="nextBtn" onclick="showNextMedia()">Next 25</button>
+    <button id="randomStartBtn" onclick="startFromRandom()">Random Start</button>
 
-    <!-- Auto-next counter -->
-    <div id="autoNextCounter">Next in: 15s</div>
-
-    <div class="media-container" id="mediaDisplay">
-        <!-- Media will be displayed here -->
-    </div>
-
-    <div id="media-id-container">
-        <h2>Media ID: <span id="media-id">1</span></h2>
-    </div>
-    
-    <div id="link-preview">
-        <!-- Link text preview will appear here -->
-    </div>
+    <div id="mediaContainer"></div>
 
     <script>
-        // The media URLs are embedded directly here
-
         const mediaUrls = [
             "https://i.redd.it/ldhkkfv23asc1.png",
             "https://rule34.xxx/index.php?page=post&s=view&id=4039577",
             "https://i.redd.it/ldhkkfv23asc1.png",
-            
+
     "https://rule34.xxx/index.php?page=post&s=view&id=4039577",
     "https://rule34.xxx/index.php?page=post&s=view&id=4039577",
     "https://rule34.xxx/index.php?page=post&s=view&id=4039577",
@@ -16559,123 +16512,40 @@
         ];
 
         let currentIndex = 0;
-        let shownMediaIndices = [];
-        let maxHistory = mediaUrls.length;
-        let autoNextInterval;
-        let counterInterval;
-        let isAutoRandomActive = false;
 
-        // Efficient media handling and random media selection
-        function showMedia(direction) {
-            if (direction === 'next') {
-                if (currentIndex < mediaUrls.length - 1) {
-                    currentIndex++;
-                }
-            } else if (direction === 'prev') {
-                if (shownMediaIndices.length > 0) {
-                    currentIndex = shownMediaIndices.pop(); 
-                }
-            }
+        function showNextMedia() {
+            let mediaContainer = document.getElementById('mediaContainer');
+            mediaContainer.innerHTML = '';
 
-            const mediaUrl = mediaUrls[currentIndex];
-            const mediaDisplay = document.getElementById('mediaDisplay');
-            const linkPreview = document.getElementById('link-preview');
+            for (let i = 0; i < 25; i++) {
+                if (currentIndex >= mediaUrls.length) break;
 
-            if (mediaUrl.includes('discordapp.com')) {
-                mediaUrl = mediaUrl.split('?')[0];
-            }
+                let mediaUrl = mediaUrls[currentIndex];
+                let mediaDiv = document.createElement('div');
+                mediaDiv.className = 'media-container';
 
-            mediaDisplay.innerHTML = `<img src="${mediaUrl}" alt="Media Image" class="media-display">`; // Fixed template literal issue
-            linkPreview.innerHTML = `Link: <a href="${mediaUrl}" target="_blank">${mediaUrl}</a>`; // Fixed template literal issue
+                let img = document.createElement('img');
+                img.src = mediaUrl;
 
-            // Update media ID
-            document.getElementById('media-id').textContent = currentIndex + 1;
+                let link = document.createElement('a');
+                link.href = mediaUrl;
+                link.target = "_blank";
+                link.textContent = mediaUrl;
 
-            // Update buttons
-            updateButtons();
+                mediaDiv.appendChild(img);
+                mediaDiv.appendChild(link);
+                mediaContainer.appendChild(mediaDiv);
 
-            // Auto-next if enabled
-            if (isAutoRandomActive && !autoNextInterval) {
-                startAutoRandom();
+                currentIndex++;
             }
         }
 
-        // Start auto-random with a 15-second timer
-        function startAutoRandom() {
-            // Clear any existing interval before starting
-            clearInterval(counterInterval);
-            clearInterval(autoNextInterval);
-
-            // Reset the countdown to 15 seconds
-            let countdown = 15;
-            document.getElementById('autoNextCounter').style.display = 'block';
-            document.getElementById('autoNextCounter').textContent = `Next in: ${countdown}s`; // Fixed template literal issue
-
-            // Set up the countdown interval
-            counterInterval = setInterval(() => {
-                countdown--;
-                document.getElementById('autoNextCounter').textContent = `Next in: ${countdown}s`; // Fixed template literal issue
-                if (countdown <= 0) {
-                    clearInterval(counterInterval); // Clear the countdown timer
-                }
-            }, 1000); // Update every second
-
-            // Set up the auto-random interval
-            autoNextInterval = setInterval(() => {
-                showRandomMedia(); // Show random media instead of next
-                clearInterval(counterInterval); // Clear countdown when moving to next media
-            }, 15000); // Trigger auto-random every 15 seconds
+        function startFromRandom() {
+            currentIndex = Math.floor(Math.random() * mediaUrls.length);
+            showNextMedia();
         }
 
-        // Stop auto-random
-        function stopAutoRandom() {
-            clearInterval(autoNextInterval);
-            clearInterval(counterInterval);
-            autoNextInterval = null;
-            document.getElementById('autoNextCounter').style.display = 'none';
-        }
-
-        // Random media selection with better handling to avoid repetition
-        function showRandomMedia() {
-            const availableIndices = mediaUrls
-                .map((_, index) => index)
-                .filter(index => !shownMediaIndices.includes(index));
-
-            if (availableIndices.length === 0) {
-                shownMediaIndices = [];
-            }
-
-            const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-            shownMediaIndices.push(randomIndex);
-
-            if (shownMediaIndices.length > maxHistory) {
-                shownMediaIndices.shift();
-            }
-
-            currentIndex = randomIndex;
-            showMedia('next');
-        }
-
-        // Toggle auto random on and off
-        function toggleAutoRandom() {
-            if (isAutoRandomActive) {
-                stopAutoRandom();
-            } else {
-                isAutoRandomActive = true;
-                showRandomMedia();
-            }
-        }
-
-        // Update button states
-        function updateButtons() {
-            document.getElementById('backBtn').disabled = currentIndex === 0;
-            document.getElementById('backBtn').classList.toggle('disabled', currentIndex === 0);
-            document.getElementById('nextBtn').disabled = currentIndex === mediaUrls.length - 1;
-            document.getElementById('nextBtn').classList.toggle('disabled', currentIndex === mediaUrls.length - 1);
-        }
-
-        // Initial call to display the first media
-        showMedia('next');
+        showNextMedia();
     </script>
 </body>
 </html>
